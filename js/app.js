@@ -4,6 +4,36 @@
   const P = window.Planner;
   const $ = P.$;
 
+  function getWorldCoords(x, y) {
+    const hq = P.objects.find(o => o.type === 'hq');
+    const baseX = $('hqWorldX') ? parseInt($('hqWorldX').value, 10) || 0 : 0;
+    const baseY = $('hqWorldY') ? parseInt($('hqWorldY').value, 10) || 0 : 0;
+
+    const obj = P.objects.find(o => o.x === x && o.y === y);
+    const d = obj ? P.dims[obj.type] : 1;
+
+    // Правый нижний угол выбранного объекта
+    const brX = x + (d - 1);
+    const brY = y + (d - 1);
+
+    if (!hq) return { wx: baseX - brY, wy: baseY - brX, hasHq: false };
+
+    // Правый нижний угол HQ
+    const hqBrX = hq.x + (P.dims.hq - 1);
+    const hqBrY = hq.y + (P.dims.hq - 1);
+
+    const dx = brX - hqBrX;
+    const dy = brY - hqBrY;
+
+    // Поворот осей: движение вправо по сетке (+dx) уменьшает Y, движение вниз (+dy) уменьшает X
+    return {
+      wx: baseX - dy,
+      wy: baseY - dx,
+      hasHq: true
+    };
+  }
+
+
   function seed() {
     P.objects = [
       P.make('hq', 48, 48),
@@ -41,20 +71,19 @@
       return;
     }
 
+    const wc = getWorldCoords(o.x, o.y);
     const title = document.createElement('div');
-    title.textContent =
-      {
-        hq: 'Alliance HQ',
-        banner: 'Alliance Banner',
-        trap1: 'Hunting Trap 1',
-        trap2: 'Hunting Trap 2',
-        city: 'Player City'
-      }[o.type] +
-      ' at (' +
-      o.x +
-      ', ' +
-      o.y +
-      ')';
+    const typeName = {
+      hq: 'Alliance HQ',
+      banner: 'Alliance Banner',
+      trap1: 'Hunting Trap 1',
+      trap2: 'Hunting Trap 2',
+      city: 'Player City'
+    }[o.type];
+
+    title.innerHTML =
+      `<b>${typeName}</b><br>` +
+      `<small>World: <b>X ${wc.wx} · Y ${wc.wy}</b> (Grid: ${o.x}, ${o.y})</small>`;
     p.append(title);
 
     if (o.type === 'city') {
@@ -121,73 +150,71 @@
     const p = $('list');
     if (!p) return;
     const q = $('search') ? $('search').value.toLowerCase() : '';
-    const onlyUnassigned = $('onlyUnassigned') ? $('onlyUnassigned').checked : false;
     p.replaceChildren();
 
-    const cities = P.objects.filter(o => o.type === 'city');
-    const placedNames = new Set(cities.map(c => c.name.trim().toLowerCase()).filter(Boolean));
-    const unplaced = P.roster.filter(name => !placedNames.has(name.toLowerCase()));
-
-    const items = [];
-
-    for (const name of unplaced) {
-      if (q && !name.toLowerCase().includes(q)) continue;
-      items.push({ status: 'unplaced', name });
-    }
-
-    for (const o of cities) {
+    const cities = P.objects.filter(o => {
+      if (o.type !== 'city') return false;
       const displayName = o.name || 'Unnamed city';
-      if (q && !displayName.toLowerCase().includes(q)) continue;
-      if (onlyUnassigned && o.assignment !== '0') continue;
-      items.push({ status: o.assignment === '0' ? 'free' : 'assigned', name: displayName, obj: o });
-    }
+      return !q || displayName.toLowerCase().includes(q);
+    });
 
-    if (!items.length) {
+    if (!cities.length) {
       const empty = document.createElement('p');
       empty.className = 'hint';
-      empty.textContent = 'No matching players.';
+      empty.textContent = 'No matching cities.';
       p.append(empty);
       return;
     }
 
-    for (const item of items) {
+    for (const o of cities) {
       const row = document.createElement('div');
       row.className = 'entry';
+      if (P.selected === o.id) row.classList.add('is-selected');
 
-      const nameSpan = document.createElement('span');
-      nameSpan.textContent = item.name;
+      const nameInput = document.createElement('input');
+      nameInput.className = 'entry-input';
+      nameInput.maxLength = 50;
+      nameInput.value = o.name;
+      nameInput.placeholder = 'Unnamed city';
+
+      nameInput.addEventListener('input', () => {
+        o.name = nameInput.value;
+        if ($('named')) {
+          $('named').textContent = P.objects.filter(a => a.type === 'city' && a.name.trim()).length;
+        }
+        if (P.selected === o.id) renderSelection();
+        P.draw();
+      });
+
+      nameInput.addEventListener('focus', () => {
+        if (P.selected !== o.id) {
+          P.selected = o.id;
+          document.querySelectorAll('.entry').forEach(el => el.classList.remove('is-selected'));
+          row.classList.add('is-selected');
+          renderSelection();
+          P.draw();
+        }
+      });
 
       const tag = document.createElement('small');
+      tag.textContent = o.assignment === '0' ? 'Free' : 'HT' + o.assignment;
+      tag.className = o.assignment === '0' ? 'badge-free' : 'badge-assigned';
+
       const btn = document.createElement('button');
+      btn.textContent = 'Locate';
+      btn.onclick = () => {
+        P.selected = o.id;
+        P.ox = P.map.clientWidth / 2 - (o.x + 1) * P.zoom;
+        P.oy = P.map.clientHeight / 2 - (o.y + 1) * P.zoom;
+        P.setTool('select');
+        refresh();
+      };
 
-      if (item.status === 'unplaced') {
-        tag.textContent = 'Not placed';
-        tag.className = 'badge-unplaced';
-        btn.textContent = 'Place';
-        btn.onclick = () => {
-          if ($('newName')) $('newName').value = item.name;
-          P.setTool('city');
-          P.message('Click on the map to place ' + item.name);
-        };
-      } else {
-        const o = item.obj;
-        tag.textContent = o.assignment === '0' ? 'No trap' : 'HT' + o.assignment;
-        tag.className = o.assignment === '0' ? 'badge-free' : 'badge-assigned';
-        btn.textContent = 'Locate';
-        btn.onclick = () => {
-          P.selected = o.id;
-          P.ox = P.map.clientWidth / 2 - (o.x + 1) * P.zoom;
-          P.oy = P.map.clientHeight / 2 - (o.y + 1) * P.zoom;
-          P.setTool('select');
-          refresh();
-        };
-      }
-
-      row.append(nameSpan, tag, btn);
+      row.append(nameInput, tag, btn);
       p.append(row);
     }
   }
-    document.querySelectorAll('[data-tool]').forEach(b => (b.onclick = () => P.setTool(b.dataset.tool)));
+  document.querySelectorAll('[data-tool]').forEach(b => (b.onclick = () => P.setTool(b.dataset.tool)));
 
   P.cv.addEventListener('pointerdown', e => {
     e.preventDefault();
@@ -214,7 +241,10 @@
   P.cv.addEventListener('pointermove', e => {
     const t = P.tile(e);
     P.hover = t;
-    if ($('coords')) $('coords').textContent = 'X ' + t.x + ' · Y ' + t.y;
+    const wc = getWorldCoords(t.x, t.y);
+    if ($('coords')) {
+      $('coords').textContent = `World X ${wc.wx} · Y ${wc.wy} (Grid ${t.x}, ${t.y})`;
+    }
 
     if (P.drag) {
       if (Math.abs(e.clientX - P.drag.px) + Math.abs(e.clientY - P.drag.py) > 5) {
@@ -231,6 +261,7 @@
         if (P.valid(o.type, x, y, o.id)) {
           o.x = x;
           o.y = y;
+          if (P.selected === o.id) renderSelection();
         }
       }
     }
@@ -333,38 +364,20 @@
     if ($(k)) $(k).onchange = P.draw;
   });
 
+  if ($('hqWorldX')) $('hqWorldX').oninput = renderSelection;
+  if ($('hqWorldY')) $('hqWorldY').oninput = renderSelection;
   if ($('search')) $('search').oninput = renderList;
-  if ($('onlyUnassigned')) $('onlyUnassigned').onchange = renderList;
-
-  if ($('loadRoster')) {
-    $('loadRoster').onclick = () => {
-      if (!$('rosterInput')) return;
-      const raw = $('rosterInput').value
-        .split('\n')
-        .map(s => s.trim())
-        .filter(Boolean);
-      P.roster = [...new Set(raw)];
-      $('rosterInput').value = '';
-      renderList();
-      P.message('Loaded ' + P.roster.length + ' players into roster.');
-    };
-  }
-
-  if ($('clearRoster')) {
-    $('clearRoster').onclick = () => {
-      P.roster = [];
-      renderList();
-      P.message('Roster cleared.');
-    };
-  }
 
   function pack() {
     return {
-      version: 3,
+      version: 4,
       grid: { width: P.W, height: P.H },
       territory: { hq: 15, banner: 7 },
+      hqWorld: {
+        x: $('hqWorldX') ? parseInt($('hqWorldX').value, 10) || 0 : 0,
+        y: $('hqWorldY') ? parseInt($('hqWorldY').value, 10) || 0 : 0
+      },
       objects: P.objects,
-      roster: P.roster,
       nextId: P.seq
     };
   }
@@ -409,8 +422,12 @@
       arr.push(o);
     }
 
+    if (data.hqWorld) {
+      if ($('hqWorldX') && Number.isFinite(data.hqWorld.x)) $('hqWorldX').value = data.hqWorld.x;
+      if ($('hqWorldY') && Number.isFinite(data.hqWorld.y)) $('hqWorldY').value = data.hqWorld.y;
+    }
+
     P.objects = arr;
-    P.roster = Array.isArray(data.roster) ? data.roster.map(s => String(s).slice(0, 50)) : [];
     P.seq = arr.length + 1;
     P.selected = null;
     refresh();
@@ -498,4 +515,3 @@
     new ResizeObserver(P.draw).observe(P.map);
   }
 })();
-

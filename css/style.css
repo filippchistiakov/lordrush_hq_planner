@@ -288,3 +288,31 @@ textarea {
 .badge-assigned {
   color: #398b72;
 }
+.entry-input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 6px;
+  font-size: 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #e7edf5;
+}
+
+.entry-input:hover {
+  border-color: #34414e;
+  background: #111d26;
+}
+
+.entry-input:focus {
+  border-color: #43a9bd;
+  background: #111d26;
+  outline: none;
+}
+
+.entry.is-selected {
+  background: #233340;
+  border-radius: 5px;
+  padding-left: 4px;
+  padding-right: 4px;
+}

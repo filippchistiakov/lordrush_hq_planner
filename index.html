@@ -36,7 +36,19 @@
         <option value="0">Unassigned</option>
       </select>
 
-      <h2 style="margin-top:20px">Display</h2>
+      <h2 style="margin-top:20px">HQ World Coordinates</h2>
+      <div class="stats" style="margin-bottom: 8px;">
+        <div>
+          <label for="hqWorldX" style="margin-top:0">HQ X</label>
+          <input id="hqWorldX" type="number" value="500">
+        </div>
+        <div>
+          <label for="hqWorldY" style="margin-top:0">HQ Y</label>
+          <input id="hqWorldY" type="number" value="500">
+        </div>
+      </div>
+
+      <h2 style="margin-top:16px">Display</h2>
       <div class="row">
         <input id="territory" type="checkbox" checked>
         <label for="territory">Show alliance territory</label>
@@ -59,7 +71,7 @@
         <span><i class="swatch" style="background:#e04d55"></i>Fourth row / non-optimized</span>
       </div>
 
-      <p class="hint">Territory and occupied tiles are independent. Cities may be placed outside territory. Structures cannot overlap. Fourth-row and farther cities are red relative to their assigned trap (or nearest trap when unassigned). The starting layout is an example and can be rearranged.</p>
+      <p class="hint">Territory and occupied tiles are independent. Cities may be placed outside territory. Structures cannot overlap. Fourth-row and farther cities are red relative to their assigned trap (or nearest trap when unassigned).</p>
       <div id="status" role="status">Choose a tool and click the map. Drag structures with Select / Move.</div>
     </aside>
 
@@ -67,14 +79,23 @@
       <canvas id="canvas"></canvas>
       <div class="coords" id="coords">X 0 · Y 0</div>
       <div class="zoom">
+        <button id="toggleIso">Isometric 45°</button>
         <button id="zoomOut">−</button>
         <button id="zoomIn">+</button>
         <button id="fit">Fit all</button>
         <button id="focus">Focus structures</button>
       </div>
+
     </section>
 
     <aside class="panel right">
+      <h2>Player assignments</h2>
+      <input id="search" placeholder="Search player names">
+      <div id="list" style="max-height:260px;overflow:auto;margin-top:6px;"></div>
+
+      <h2 style="margin-top:18px">Selected structure</h2>
+      <div id="selection" class="hint">Click a structure to edit it.</div>
+
       <h2>Map statistics</h2>
       <div class="stats">
         <div class="stat"><b id="cities">0</b><span>Cities</span></div>
@@ -85,19 +106,7 @@
         <div class="stat"><b id="ht2">0</b><span>Trap 2 cities</span></div>
       </div>
 
-      <h2>Selected structure</h2>
-      <div id="selection" class="hint">Click a structure to edit it.</div>
-      <h2>Alliance Roster & Unplaced</h2>
-      <textarea id="rosterInput" rows="3" placeholder="Paste player names (one per line)..."></textarea>
-      <div class="actions" style="margin: 6px 0 12px;">
-        <button id="loadRoster">Load list</button>
-        <button id="clearRoster">Clear list</button>
-      </div>
-      <h2>Player assignments</h2>
-      <input id="search" placeholder="Search player names">
-      <div id="list" style="max-height:240px;overflow:auto"></div>
-
-      <h2 style="margin-top:18px">Save and load</h2>
+      <h2>Save and load</h2>
       <div class="actions">
         <button id="save">Save locally</button>
         <button id="load">Load saved</button>
@@ -106,9 +115,9 @@
         <button id="clear">Clear map</button>
       </div>
       <input type="file" id="file" accept=".json,application/json" hidden>
-      <p class="hint">Use Export JSON for a portable backup. Local saves stay in this browser when storage is available.</p>
     </aside>
   </main>
+
   <script src="js/map.js"></script>
   <script src="js/app.js"></script>
 </body>
