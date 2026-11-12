@@ -23,6 +23,7 @@
         <button data-tool="trap1">Trap 1</button>
         <button data-tool="trap2">Trap 2</button>
         <button data-tool="city">City 2×2</button>
+        <button data-tool="obstacle">Obstacle 1×1</button>
         <button data-tool="erase">Erase</button>
       </div>
 
@@ -63,11 +64,12 @@
       </div>
 
       <div class="legend">
-        <span><i class="swatch" style="background:#398b72"></i>Territory</span>
+       <span><i class="swatch" style="background:#398b72"></i>Territory</span>
         <span><i class="swatch" style="background:#4e82d5"></i>HQ</span>
         <span><i class="swatch" style="background:#e59b48"></i>Traps</span>
         <span><i class="swatch" style="background:#e0c45c"></i>Banners</span>
         <span><i class="swatch" style="background:#a58ae5"></i>Cities</span>
+        <span><i class="swatch" style="background:#566573"></i>Obstacle</span>
         <span><i class="swatch" style="background:#e04d55"></i>Fourth row / non-optimized</span>
       </div>
 
@@ -79,7 +81,7 @@
       <canvas id="canvas"></canvas>
       <div class="coords" id="coords">X 0 · Y 0</div>
       <div class="zoom">
-        <button id="toggleIso">Isometric 45°</button>
+        <button id="toggleIso" class="active">Isometric 45°</button>
         <button id="zoomOut">−</button>
         <button id="zoomIn">+</button>
         <button id="fit">Fit all</button>

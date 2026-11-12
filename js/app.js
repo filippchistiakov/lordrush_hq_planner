@@ -25,14 +25,12 @@
     const dx = brX - hqBrX;
     const dy = brY - hqBrY;
 
-    // Поворот осей: движение вправо по сетке (+dx) уменьшает Y, движение вниз (+dy) уменьшает X
     return {
       wx: baseX - dy,
       wy: baseY - dx,
       hasHq: true
     };
   }
-
 
   function seed() {
     P.objects = [
@@ -73,13 +71,7 @@
 
     const wc = getWorldCoords(o.x, o.y);
     const title = document.createElement('div');
-    const typeName = {
-      hq: 'Alliance HQ',
-      banner: 'Alliance Banner',
-      trap1: 'Hunting Trap 1',
-      trap2: 'Hunting Trap 2',
-      city: 'Player City'
-    }[o.type];
+    const typeName = (P.types[o.type] && P.types[o.type].title) || o.type;
 
     title.innerHTML =
       `<b>${typeName}</b><br>` +
@@ -204,8 +196,9 @@
       btn.textContent = 'Locate';
       btn.onclick = () => {
         P.selected = o.id;
-        P.ox = P.map.clientWidth / 2 - (o.x + 1) * P.zoom;
-        P.oy = P.map.clientHeight / 2 - (o.y + 1) * P.zoom;
+        const pos = P.gridToScreen(o.x + 1, o.y + 1);
+        P.ox = P.map.clientWidth / 2 - pos.x * P.zoom;
+        P.oy = P.map.clientHeight / 2 - pos.y * P.zoom;
         P.setTool('select');
         refresh();
       };
@@ -282,8 +275,9 @@
           P.message('Structure removed.');
         }
       } else if (P.dims[P.tool]) {
-        if (['hq', 'trap1', 'trap2'].includes(P.tool) && P.objects.some(o => o.type === P.tool)) {
-          P.message('Only one ' + P.tool + ' is allowed. Move the existing structure.');
+        const info = P.types[P.tool];
+        if (info && info.unique && P.objects.some(o => o.type === P.tool)) {
+          P.message('Only one ' + info.title + ' is allowed. Move the existing structure.');
         } else if (P.valid(P.tool, t.x, t.y)) {
           const o = P.make(
             P.tool,
@@ -294,7 +288,7 @@
           );
           P.objects.push(o);
           P.selected = o.id;
-          P.message('Placed ' + P.tool + ' at (' + t.x + ', ' + t.y + ').');
+          P.message('Placed ' + info.title + ' at (' + t.x + ', ' + t.y + ').');
         } else {
           P.message('Placement blocked: occupied tiles or outside map.');
         }
@@ -335,6 +329,16 @@
 
   if ($('zoomIn')) $('zoomIn').onclick = () => zoomBy(1.3);
   if ($('zoomOut')) $('zoomOut').onclick = () => zoomBy(1 / 1.3);
+
+  if ($('toggleIso')) {
+    $('toggleIso').onclick = () => {
+      P.iso = !P.iso;
+      $('toggleIso').classList.toggle('active', P.iso);
+      P.center();
+      P.draw();
+    };
+  }
+
   if ($('fit')) {
     $('fit').onclick = () => {
       P.zoom = Math.min(P.map.clientWidth / 104, P.map.clientHeight / 104);
@@ -353,9 +357,11 @@
       const top = Math.min(...P.objects.map(o => o.y)) - 5;
       const right = Math.max(...P.objects.map(o => o.x + P.dims[o.type])) + 5;
       const bottom = Math.max(...P.objects.map(o => o.y + P.dims[o.type])) + 5;
+      const mid = P.gridToScreen((left + right) / 2, (top + bottom) / 2);
+
       P.zoom = Math.min(45, P.map.clientWidth / (right - left), P.map.clientHeight / (bottom - top));
-      P.ox = (P.map.clientWidth - (left + right) * P.zoom) / 2;
-      P.oy = (P.map.clientHeight - (top + bottom) * P.zoom) / 2;
+      P.ox = P.map.clientWidth / 2 - mid.x * P.zoom;
+      P.oy = P.map.clientHeight / 2 - mid.y * P.zoom;
       P.draw();
     };
   }
@@ -387,9 +393,7 @@
       throw Error('Invalid layout');
     }
     const arr = [];
-    let hq = 0;
-    let t1 = 0;
-    let t2 = 0;
+    const counts = {};
 
     for (const raw of data.objects) {
       if (
@@ -399,12 +403,9 @@
       ) {
         throw Error('Invalid structure');
       }
-      if (
-        (raw.type === 'hq' && ++hq > 1) ||
-        (raw.type === 'trap1' && ++t1 > 1) ||
-        (raw.type === 'trap2' && ++t2 > 1)
-      ) {
-        throw Error('Duplicate HQ or trap');
+      counts[raw.type] = (counts[raw.type] || 0) + 1;
+      if (P.types[raw.type].unique && counts[raw.type] > 1) {
+        throw Error('Duplicate ' + P.types[raw.type].title);
       }
 
       const o = {

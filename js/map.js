@@ -3,6 +3,19 @@
 
   const $ = id => document.getElementById(id);
 
+  const types = {
+    hq: {size: 3, color: '#4e82d5', title: 'Alliance HQ', short: 'HQ', unique: true},
+    banner: {size: 1, color: '#e0c45c', title: 'Alliance Banner', short: 'B', unique: false},
+    trap1: {size: 3, color: '#e59b48', title: 'Hunting Trap 1', short: 'HT1', unique: true},
+    trap2: {size: 3, color: '#d87f3c', title: 'Hunting Trap 2', short: 'HT2', unique: true},
+    city: {size: 2, color: '#a58ae5', title: 'Player City', short: '', unique: false},
+    obstacle: {size: 1, color: '#566573', title: 'Obstacle', short: '✕', unique: false}
+  };
+
+  // Автоматически собираем словари размеров и цветов из единого справочника types
+  const dims = Object.fromEntries(Object.entries(types).map(([k, v]) => [k, v.size]));
+  const colors = Object.fromEntries(Object.entries(types).map(([k, v]) => [k, v.color]));
+
   window.Planner = {
     $,
     cv: $('canvas'),
@@ -10,8 +23,9 @@
     map: $('map'),
     W: 100,
     H: 100,
-    dims: { hq: 3, banner: 1, trap1: 3, trap2: 3, city: 2 },
-    colors: { hq: '#4e82d5', banner: '#e0c45c', trap1: '#e59b48', trap2: '#d87f3c', city: '#a58ae5' },
+    types,
+    dims,
+    colors,
     objects: [],
     roster: [],
     seq: 1,
@@ -21,20 +35,43 @@
     drag: null,
     zoom: 17,
     ox: 0,
-    oy: 0
+    oy: 0,
+    iso: true
   };
 
+
   const P = window.Planner;
+  const K = Math.SQRT1_2; // 0.70710678... (cos 45° и sin 45°)
 
   P.uid = () => P.seq++;
 
   P.make = (type, x, y, name = '', assignment = '0') => {
-    return { id: P.uid(), type, x, y, name, assignment };
+    return {id: P.uid(), type, x, y, name, assignment};
+  };
+
+  // Точное соответствие матрице ctx.scale(1, 0.5) + ctx.rotate(+45°)
+  P.gridToScreen = (gx, gy) => {
+    if (!P.iso) return {x: gx, y: gy};
+    return {
+      x: (gx - gy) * K,
+      y: (gx + gy) * K * 0.5
+    };
   };
 
   P.center = () => {
-    P.ox = P.map.clientWidth / 2 - (P.W * P.zoom) / 2;
-    P.oy = P.map.clientHeight / 2 - (P.H * P.zoom) / 2;
+    let gx = P.W / 2;
+    let gy = P.H / 2;
+    if (P.objects.length) {
+      const left = Math.min(...P.objects.map(o => o.x));
+      const top = Math.min(...P.objects.map(o => o.y));
+      const right = Math.max(...P.objects.map(o => o.x + (P.dims[o.type] || 1)));
+      const bottom = Math.max(...P.objects.map(o => o.y + (P.dims[o.type] || 1)));
+      gx = (left + right) / 2;
+      gy = (top + bottom) / 2;
+    }
+    const c = P.gridToScreen(gx, gy);
+    P.ox = P.map.clientWidth / 2 - c.x * P.zoom;
+    P.oy = P.map.clientHeight / 2 - c.y * P.zoom;
   };
 
   P.message = s => {
@@ -97,11 +134,21 @@
     return [...P.objects].reverse().find(o => x >= o.x && x < o.x + P.dims[o.type] && y >= o.y && y < o.y + P.dims[o.type]);
   };
 
+  // Точное обратное преобразование клика мыши для угла +45°
   P.tile = e => {
     const r = P.cv.getBoundingClientRect();
+    const sx = (e.clientX - r.left - P.ox) / P.zoom;
+    const sy = (e.clientY - r.top - P.oy) / P.zoom;
+
+    if (!P.iso) {
+      return {x: Math.floor(sx), y: Math.floor(sy)};
+    }
+
+    const u = sx / K;       // gx - gy
+    const v = (sy * 2) / K; // gx + gy
     return {
-      x: Math.floor((e.clientX - r.left - P.ox) / P.zoom),
-      y: Math.floor((e.clientY - r.top - P.oy) / P.zoom)
+      x: Math.floor((u + v) / 2),
+      y: Math.floor((v - u) / 2)
     };
   };
 
@@ -131,6 +178,11 @@
     ctx.translate(P.ox, P.oy);
     ctx.scale(P.zoom, P.zoom);
 
+    if (P.iso) {
+      ctx.scale(1, 0.5);
+      ctx.rotate(Math.PI / 4); // Поворот на +45° (90° по часовой стрелке от -45°)
+    }
+
     ctx.fillStyle = '#1e3039';
     ctx.fillRect(0, 0, P.W, P.H);
 
@@ -142,22 +194,17 @@
     }
 
     if ($('grid') && $('grid').checked && P.zoom >= 5) {
-      const x0 = Math.max(0, Math.floor(-P.ox / P.zoom));
-      const x1 = Math.min(P.W, Math.ceil((w - P.ox) / P.zoom));
-      const y0 = Math.max(0, Math.floor(-P.oy / P.zoom));
-      const y1 = Math.min(P.H, Math.ceil((h - P.oy) / P.zoom));
-
       ctx.beginPath();
       ctx.strokeStyle = 'rgba(205,225,240,.16)';
       ctx.lineWidth = 1 / P.zoom;
 
-      for (let x = x0; x <= x1; x++) {
-        ctx.moveTo(x, y0);
-        ctx.lineTo(x, y1);
+      for (let x = 0; x <= P.W; x++) {
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, P.H);
       }
-      for (let y = y0; y <= y1; y++) {
-        ctx.moveTo(x0, y);
-        ctx.lineTo(x1, y);
+      for (let y = 0; y <= P.H; y++) {
+        ctx.moveTo(0, y);
+        ctx.lineTo(P.W, y);
       }
       ctx.stroke();
     }
@@ -167,13 +214,13 @@
     ctx.strokeRect(0, 0, P.W, P.H);
 
     for (const o of P.objects) {
-      const d = P.dims[o.type];
+      const d = P.dims[o.type] || 1;
       ctx.fillStyle =
         o.type === 'city' && P.isNonOptimized(o)
           ? '#e04d55'
           : o.type === 'city' && !o.name
-          ? '#8094a4'
-          : P.colors[o.type];
+            ? '#8094a4'
+            : P.colors[o.type];
 
       ctx.fillRect(o.x + 0.04, o.y + 0.04, d - 0.08, d - 0.08);
       ctx.strokeStyle = o.id === P.selected ? 'white' : '#b7c8d5';
@@ -181,37 +228,33 @@
       ctx.strokeRect(o.x + 0.04, o.y + 0.04, d - 0.08, d - 0.08);
 
       if (P.zoom >= 7) {
+        const info = P.types[o.type] || {};
         let label =
-          o.type === 'hq'
-            ? 'HQ'
-            : o.type === 'banner'
-            ? 'B'
-            : o.type === 'trap1'
-            ? 'HT1'
-            : o.type === 'trap2'
-            ? 'HT2'
-            : $('names') && $('names').checked
-            ? o.name || 'Empty'
-            : 'City';
+          o.type === 'city'
+            ? ($('names') && $('names').checked ? o.name || 'Empty' : 'City')
+            : info.short || o.type;
 
         ctx.save();
-        ctx.beginPath();
-        ctx.rect(o.x, o.y, d, d);
-        ctx.clip();
+        ctx.translate(o.x + d / 2, o.y + d / 2);
+
+        if (P.iso) {
+          ctx.rotate(-Math.PI / 4);
+          ctx.scale(1, 2);
+        }
 
         ctx.fillStyle = '#fff';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.font = 'bold ' + Math.min(d * 0.48, Math.max(0.5, 11 / P.zoom)) + 'px sans-serif';
+        ctx.font = 'bold ' + Math.min(d * 0.45, Math.max(0.45, 11 / P.zoom)) + 'px sans-serif';
 
-        while (label.length > 1 && ctx.measureText(label).width > d - 0.15) {
+        while (label.length > 1 && ctx.measureText(label).width > d * (P.iso ? 1.2 : 0.9)) {
           label = label.slice(0, -2) + '…';
         }
-        ctx.fillText(label, o.x + d / 2, o.y + d / 2);
+        ctx.fillText(label, 0, 0);
 
         if (o.type === 'city' && P.zoom >= 15) {
-          ctx.font = '.33px sans-serif';
-          ctx.fillText(o.assignment === '0' ? 'Free' : 'HT' + o.assignment, o.x + d / 2, o.y + d - 0.27);
+          ctx.font = '.32px sans-serif';
+          ctx.fillText(o.assignment === '0' ? 'Free' : 'HT' + o.assignment, 0, d * 0.32);
         }
         ctx.restore();
       }
