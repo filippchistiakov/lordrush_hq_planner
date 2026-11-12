@@ -87,7 +87,12 @@
 
       <h2>Selected structure</h2>
       <div id="selection" class="hint">Click a structure to edit it.</div>
-
+      <h2>Alliance Roster & Unplaced</h2>
+      <textarea id="rosterInput" rows="3" placeholder="Paste player names (one per line)..."></textarea>
+      <div class="actions" style="margin: 6px 0 12px;">
+        <button id="loadRoster">Load list</button>
+        <button id="clearRoster">Clear list</button>
+      </div>
       <h2>Player assignments</h2>
       <input id="search" placeholder="Search player names">
       <div id="list" style="max-height:240px;overflow:auto"></div>
@@ -104,7 +109,7 @@
       <p class="hint">Use Export JSON for a portable backup. Local saves stay in this browser when storage is available.</p>
     </aside>
   </main>
-
+  <script src="js/map.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

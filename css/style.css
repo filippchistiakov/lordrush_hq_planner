@@ -233,9 +233,11 @@ canvas {
     grid-template-columns: 230px minmax(0, 1fr);
     height: auto;
   }
+
   .maparea {
     height: 650px;
   }
+
   .right {
     grid-column: 1 / -1;
   }
@@ -246,15 +248,43 @@ canvas {
     display: flex;
     flex-direction: column;
   }
+
   .maparea {
     height: 460px;
     min-height: 460px;
   }
+
   .tools {
     grid-template-columns: repeat(4, 1fr);
   }
+
   .tools button {
     font-size: 11px;
     padding: 6px 2px;
   }
+}
+
+textarea {
+  background: #111d26;
+  border: 1px solid #435563;
+  border-radius: 6px;
+  color: #e7edf5;
+  padding: 8px;
+  width: 100%;
+  font: inherit;
+  font-size: 12px;
+  resize: vertical;
+}
+
+.badge-unplaced {
+  color: #e04d55;
+  font-weight: bold;
+}
+
+.badge-free {
+  color: #e0c45c;
+}
+
+.badge-assigned {
+  color: #398b72;
 }
