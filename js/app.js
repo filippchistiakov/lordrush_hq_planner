@@ -15,12 +15,13 @@
     P.refresh();
   }
 
-  if (P.loadFromStorage) P.loadFromStorage();
-
-  if (!P.objects.length) {
-    seed();
-  } else {
-    P.center();
-    P.refresh();
-  }
+  (async () => {
+    const loaded = P.initData ? await P.initData() : false;
+    if (!loaded || !P.objects.length) {
+      seed();
+    } else {
+      P.center();
+      P.refresh();
+    }
+  })();
 })();
