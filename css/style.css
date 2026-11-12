@@ -1,0 +1,260 @@
+:root {
+  font-family: system-ui, Arial, sans-serif;
+  color: #e7edf5;
+  background: #101820;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+header {
+  padding: 16px 22px;
+  border-bottom: 1px solid #34414e;
+}
+
+h1 {
+  font-size: 21px;
+  margin: 0 0 5px;
+}
+
+small, .hint {
+  color: #9fb0be;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 290px minmax(0, 1fr) 280px;
+  gap: 12px;
+  padding: 12px;
+  height: calc(100vh - 76px);
+  min-height: 590px;
+}
+
+.panel {
+  background: #1b2732;
+  border: 1px solid #34414e;
+  border-radius: 10px;
+  padding: 12px;
+  overflow: auto;
+}
+
+h2 {
+  font-size: 14px;
+  margin: 0 0 12px;
+}
+
+button, input, select {
+  font: inherit;
+}
+
+button {
+  background: #283947;
+  color: #e7edf5;
+  border: 1px solid #435563;
+  border-radius: 7px;
+  padding: 8px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #365063;
+}
+
+button.active {
+  background: #16778b;
+  border-color: #43a9bd;
+}
+
+input, select {
+  background: #111d26;
+  border: 1px solid #435563;
+  border-radius: 6px;
+  color: #e7edf5;
+  padding: 8px;
+  width: 100%;
+}
+
+label {
+  display: block;
+  font-size: 12px;
+  color: #c4d1dc;
+  margin: 11px 0 5px;
+}
+
+.tools {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.maparea {
+  position: relative;
+  overflow: hidden;
+  background: #17232b;
+  border: 1px solid #34414e;
+  border-radius: 10px;
+  touch-action: none;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.zoom {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  gap: 5px;
+}
+
+.coords {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: #101820d9;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin-bottom: 14px;
+}
+
+.stat {
+  background: #111d26;
+  padding: 9px;
+  border-radius: 7px;
+}
+
+.stat b {
+  font-size: 22px;
+  display: block;
+}
+
+.stat span {
+  font-size: 11px;
+  color: #9fb0be;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 8px 0;
+}
+
+.row input[type=checkbox] {
+  width: auto;
+}
+
+.row label {
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.actions button {
+  font-size: 12px;
+}
+
+.entry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 0;
+  border-bottom: 1px solid #34414e;
+  font-size: 12px;
+}
+
+.entry span {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entry button {
+  padding: 4px 7px;
+  font-size: 11px;
+}
+
+.hint {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+#status {
+  min-height: 32px;
+  color: #b6c8d4;
+  font-size: 12px;
+  margin-top: 10px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  font-size: 11px;
+  margin: 9px 0;
+  color: #b6c8d4;
+}
+
+.swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 3px;
+}
+
+#selection {
+  margin: 10px 0 18px;
+}
+
+@media (max-width: 1050px) {
+  .layout {
+    grid-template-columns: 230px minmax(0, 1fr);
+    height: auto;
+  }
+  .maparea {
+    height: 650px;
+  }
+  .right {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 650px) {
+  .layout {
+    display: flex;
+    flex-direction: column;
+  }
+  .maparea {
+    height: 460px;
+    min-height: 460px;
+  }
+  .tools {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .tools button {
+    font-size: 11px;
+    padding: 6px 2px;
+  }
+}
